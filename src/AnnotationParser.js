@@ -18,11 +18,16 @@ module.exports = class AnnotationParser {
 
   /**
    * @param {string} id 
+   * @returns {Annotation}
    */
   get(id) {
     return this.registry.find(v => v.id === id);
   }
 
+  /**
+   * @param {string} annotation 
+   * @returns {Annotation[]}
+   */
   getByAnnotation(annotation) {
     return this.registry.filter(v => v.class.annotations[annotation]);
   }
