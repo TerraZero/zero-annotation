@@ -34,6 +34,14 @@ module.exports = class Annotation {
     return this.data.filter(v => v.type === 'method');
   }
 
+  /**
+   * @param {string} annotation 
+   * @returns {import('../types').T_Annotation}
+   */
+  getClassAnnotation(annotation) {
+    return this.class.annotations[annotation];
+  }
+
   /** @returns {import('../types').T_AnnotationItem} */
   getMethod(name) {
     return this.methods.find(v => v.name === name);
