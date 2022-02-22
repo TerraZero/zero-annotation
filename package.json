@@ -18,6 +18,7 @@
   "homepage": "https://github.com/TerraZero/zero-annotation#readme",
   "dependencies": {
     "@types/node": "^17.0.19",
-    "glob": "^7.2.0"
+    "glob": "^7.2.0",
+    "pencl-kit": "git+https://github.com/TerraZero/pencl-kit.git"
   }
 }

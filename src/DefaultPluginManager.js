@@ -1,0 +1,149 @@
+const Path = require('path');
+const PluginManager = require('./PluginManager');
+const Reflection = require('pencl-kit/src/Util/Reflection');
+
+module.exports = class DefaultPluginManager extends PluginManager {
+
+  /**
+   * @param {import('./AnnotationParser')} parser 
+   * @param {import('../types').T_PluginDefinition} definition
+   */
+  constructor(parser, definition) {
+    super(parser);
+    this.definition = definition;
+    this._definitions = null;
+    this._factory = null;
+  }
+
+  /**
+   * @param {Function} factory 
+   * @returns {this}
+   */
+  setFactory(factory) {
+    this._factory = factory;
+    return this;
+  }
+
+  /**
+   * @param {import('../types').T_PluginConfig} definition 
+   * @returns {any}
+   */
+  create(definition) {
+    if (this._factory) return this._factory(this, definition);
+
+    const Subject = require(Path.join(definition._plugin.root, definition._plugin.path));
+    return new Subject(definition);
+  }
+
+  /**
+   * @param {string} id 
+   * @returns {Object}
+   */
+  getDefinitions() {
+    if (this._definitions !== null) return this._definitions;
+
+    this._definitions = [];
+    for (const plugin of this.parser.getByAnnotation(this.definition.annotation)) {
+      const definition = { _plugin: plugin, _annotation: this.definition.annotation };
+      
+      const annotation = plugin.getClassAnnotation(this.definition.annotation);
+      this.addAnnotationDefinition(definition, annotation, this.definition);
+
+      for (const field in this.definition.fields) {
+        const fieldAnnotations = plugin.getClassAnnotations(field);
+  
+        this.addAnnotationDefinitionField(definition, fieldAnnotations, field, this.definition);
+      }
+
+      for (const methodAnnotation in this.definition.methods) {
+        const methods = plugin.getMethodsByAnnotation(methodAnnotation);
+        definition[methodAnnotation] = [];
+
+        for (const method of methods) {
+          let methodDefinition = { _plugin: plugin, _annotation: methodAnnotation, _method: method };
+
+          this.addAnnotationDefinition(methodDefinition, method.annotations[methodAnnotation][0], this.definition.methods[methodAnnotation]);
+
+          for (const field in this.definition.methods[methodAnnotation].fields) {
+            this.addAnnotationDefinitionField(methodDefinition, method.annotations[field], field, this.definition.methods[methodAnnotation]);
+          }
+          definition[methodAnnotation].push(methodDefinition);
+        }
+      }
+      this._definitions.push(definition);
+    }
+    return this._definitions;
+  }
+
+  /**
+   * @param {import('../types').T_PluginDefinition} definition 
+   * @param {string} name 
+   * @param {any} fallback 
+   * @returns {any}
+   */
+  getDefinitionField(definition, name, fallback = null) {
+    if (Array.isArray(definition.fields[name])) {
+      return definition.fields[name][0];
+    } else {
+      return definition.fields[name] || fallback;
+    }
+  }
+
+  /**
+   * @param {import('../types').T_PluginDefinition} definition 
+   * @param {string} name 
+   * @param {any} value 
+   * @returns {any}
+   */
+  getDefinitionFieldValue(definition, name, value = undefined) {
+    if (value !== undefined) return value;
+    if (Array.isArray(definition.fields[name])) {
+      return definition.fields[name][1];
+    } else {
+      return undefined;
+    }
+  }
+
+  /**
+   * @param {Object} definition 
+   * @param {import('../types').T_Annotation} annotation 
+   * @param {import('../types').T_PluginDefinition} pluginDefinition 
+   */
+  addAnnotationDefinition(definition, annotation, pluginDefinition) {
+    if (Array.isArray(annotation.value)) {
+      for (const index in pluginDefinition.main) {
+        if (index == 0) {
+          Reflection.setDeep(definition, this.getDefinitionField(pluginDefinition, pluginDefinition.main[index], 'id'), annotation.value[index]);
+        } else {
+          Reflection.setDeep(definition, this.getDefinitionField(pluginDefinition, pluginDefinition.main[index]), this.getDefinitionFieldValue(pluginDefinition, pluginDefinition.main[index], annotation.value[index]));
+        }
+      }
+    } else {
+      Reflection.setDeep(definition, this.getDefinitionField(pluginDefinition, pluginDefinition.main[0], 'id'), annotation.value);
+    }
+  }
+
+  /**
+   * 
+   * @param {Object} definition 
+   * @param {import('../types').T_Annotation[]} fieldAnnotations 
+   * @param {string} field 
+   * @param {import('../types').T_PluginDefinition} pluginDefinition 
+   */
+  addAnnotationDefinitionField(definition, fieldAnnotations, field, pluginDefinition) {
+    if (!fieldAnnotations) {
+      if (Reflection.getDeep(definition, this.getDefinitionField(pluginDefinition, field)) === null) {
+        Reflection.setDeep(definition, this.getDefinitionField(pluginDefinition, field), this.getDefinitionFieldValue(pluginDefinition, field));
+      }
+    } else if (fieldAnnotations.length === 1) {
+      Reflection.setDeep(definition, this.getDefinitionField(pluginDefinition, field), this.getDefinitionFieldValue(pluginDefinition, field, fieldAnnotations[0].value));
+    } else {
+      const values = [];
+      for (const fieldAnnotation of fieldAnnotations) {
+        values.push(this.getDefinitionFieldValue(pluginDefinition, field, fieldAnnotation.value));
+      }
+      Reflection.setDeep(definition, this.getDefinitionField(pluginDefinition, field), values);
+    }
+  }
+
+}

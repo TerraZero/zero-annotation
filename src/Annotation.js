@@ -36,11 +36,19 @@ module.exports = class Annotation {
 
   /**
    * @param {string} annotation 
+   * @returns {import('../types').T_Annotation[]}
+   */
+  getClassAnnotations(annotation) {
+    return this.class.annotations[annotation] || null;
+  }
+
+  /**
+   * @param {string} annotation 
    * @param {number} index
-   * @returns {import('../types').T_Annotation}
+   * @returns {(import('../types').T_Annotation|null)}
    */
   getClassAnnotation(annotation, index = 0) {
-    return this.class.annotations[annotation][index];
+    return this.class.annotations[annotation] && this.class.annotations[annotation][index] || null;
   }
 
   /** @returns {import('../types').T_AnnotationItem} */

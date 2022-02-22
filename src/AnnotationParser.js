@@ -2,18 +2,33 @@ const FS = require('fs');
 const Path = require('path');
 const Glob = require('glob');
 const Annotation = require('./Annotation');
+const DefaultPluginManager = require('./DefaultPluginManager');
 
 module.exports = class AnnotationParser {
 
   constructor(options = {}) {
     this.options = options;
     this.commentRegex = /\s*\/\*\*(?<comment>(.|\n)+?)(?=\*\/)\*\/\s*(?<ident>[^\/\n]+)/gs;
-    this.identRegex = /^\s*(.*class\s+(?<class>[a-zA-Z]*)|(?<method>.+?(?=\()).*)\s*\{?\s*$/g;
-    this.annotationRegex = /@(?<name>\S+)\s*(\{(?<type>.+?)(?=\})\}\s*)?(\((?<settings>.+?)(?=\))\)\s*)?(?<description>.*)$/gm;
+    this.identRegex = /^\s*(.*class\s+(?<class>[a-zA-Z0-9]*)|(?<method>.+?(?=\()).*)\s*\{?\s*$/g;
+    this.annotationRegex = /@(?<name>\S+)\s*(\{(?<type>.*?)(?=\})\})?(?<other>.*?)(?=(@|$))/gs;
 
     /** @type {Annotation[]} */
     this.registry = [];
     this._loaded = {};
+    this._plugins = {};
+  }
+
+  /**
+   * @param {string} annotation 
+   * @param {Object} definition 
+   * @returns {DefaultPluginManager}
+   */
+  getPluginManager(annotation, definition = {}) {
+    definition.annotation = annotation;
+    if (this._plugins[annotation] === undefined) {
+      this._plugins[annotation] = new DefaultPluginManager(this, definition);
+    }
+    return this._plugins[annotation];
   }
 
   /**
@@ -80,15 +95,25 @@ module.exports = class AnnotationParser {
       for (const annoMatch of match.groups.comment.matchAll(this.annotationRegex)) {
         annotation.annotations = annotation.annotations || {};
         annotation.annotations[annoMatch.groups.name] = annotation.annotations[annoMatch.groups.name] || [];
-        let settings = null;
+        let value = null;
+        let description = null;
         try {
-          settings = JSON.parse(annoMatch.groups.settings);
-        } catch (e) {}
+          let other = annoMatch.groups.other.trim();
+          if (other.startsWith('(')) {
+            value = this.getInternBraces(other);
+          }
+          if (value && !value.startsWith('{') && !value.startsWith('[') && !value.startsWith('"')) {
+            value = '"' + value + '"';
+          }
+          value = JSON.parse(value);
+        } catch (e) {
+          value = null;
+        }
         annotation.annotations[annoMatch.groups.name].push({
           name: annoMatch.groups.name,
           type: annoMatch.groups.type,
-          settings: settings,
-          description: annoMatch.groups.description,
+          value: value,
+          description: description,
         });
       }
 
@@ -100,6 +125,25 @@ module.exports = class AnnotationParser {
     }
     this._loaded[id] = new Annotation(data, root, file);
     return this._loaded[id];
+  }
+
+  /**
+   * @param {string} value 
+   * @returns {string}
+   */
+  getInternBraces(value) {
+    let number = null;
+    let start = null;
+    
+    for (var i = 0, v = ''; v = value.charAt(i); i++) {
+      if (v === '(') {
+        number = (number || 0) + 1;
+        start = start !== null ? start : i;
+      } else if (v === ')') number--;
+      if (number === 0) return value.substring(start + 1, i);
+    }
+
+    return null;
   }
 
 }
