@@ -182,12 +182,13 @@ module.exports = class AnnotationParser {
     return null;
   }
 
-  call(definition, method, ...args) {
+  async call(definition, method, ...args) {
     if (Array.isArray(method)) {
       const Subject = this.getPlugin(method[0]);
-      return Subject[method[1]](...args);
+      return await Subject[method[1]](...args);
     } else {
-      console.log(definition);
+      const Subject = this.getPlugin(definition._annotation + '.' + definition.id);
+      return await Subject[method](...args);
     }
   }
 
