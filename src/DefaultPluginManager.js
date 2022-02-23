@@ -71,6 +71,7 @@ module.exports = class DefaultPluginManager extends PluginManager {
    * @param {Annotation[]} annotations 
    */
   loadDefinitions(annotations) {
+    const definitions = [];
     for (const plugin of annotations) {
       const definition = { _plugin: plugin, _annotation: this.definition.annotation };
         
@@ -98,8 +99,10 @@ module.exports = class DefaultPluginManager extends PluginManager {
           definition[methodAnnotation].push(methodDefinition);
         }
       }
+      definitions.push(definition);
       this._definitions.push(definition);
     }
+    if (definitions.length) this.parser.handler.emit('plugins.' + this.definition.annotation, { manager: this, definitions });
   }
 
   /**
