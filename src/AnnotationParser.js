@@ -42,6 +42,15 @@ module.exports = class AnnotationParser {
     };
   }
 
+  getPlugin(id) {
+    const split = id.split('.');
+    const plugin = split.shift();
+    if (this._managers[plugin]) {
+      return this._managers[plugin].get(split.join('.'));
+    }
+    return null;
+  }
+
   /**
    * @param {string} annotation 
    * @param {Object} definition 
@@ -171,6 +180,15 @@ module.exports = class AnnotationParser {
     }
 
     return null;
+  }
+
+  call(definition, method, ...args) {
+    if (Array.isArray(method)) {
+      const Subject = this.getPlugin(method[0]);
+      return Subject[method[1]](...args);
+    } else {
+      console.log(definition);
+    }
   }
 
 }
