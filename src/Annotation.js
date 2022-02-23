@@ -1,6 +1,15 @@
 module.exports = class Annotation {
 
   /**
+   * @cache_loader
+   * @param {Object} object 
+   * @returns {Annotation}
+   */
+  static load(object) {
+    return new Annotation(object.data, object.root, object.path);
+  }
+
+  /**
    * @param {import('../types').T_AnnotationItem[]} data 
    * @param {string} root
    * @param {string} path 
@@ -18,6 +27,18 @@ module.exports = class Annotation {
       this.file = split.pop();
       this.ns = split.join('/');
     }
+  }
+
+  /**
+   * @cache_saver
+   * @returns {Object}
+   */
+  save() {
+    return {
+      data: this.data,
+      root: this.root,
+      path: this.path,
+    };
   }
 
   get id() {
@@ -60,8 +81,8 @@ module.exports = class Annotation {
    * @param {string} annotation 
    * @returns {import('../types').T_AnnotationItem[]}
    */
-  getMethodsByAnnotation(annotation) {
-    return this.methods.filter(v => v.annotations[annotation]);
+  getMethodsByAnnotation(annotation, modifiers = []) {
+    return this.methods.filter(v => v.annotations[annotation] && modifiers.reduce((r, m) => r && v.modifiers.includes(m), true));
   }
 
 }

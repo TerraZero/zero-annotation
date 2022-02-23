@@ -1,6 +1,7 @@
 const FS = require('fs');
 const Path = require('path');
 const Glob = require('glob');
+const Handler = require('events');
 const Annotation = require('./Annotation');
 const DefaultPluginManager = require('./DefaultPluginManager');
 
@@ -11,11 +12,34 @@ module.exports = class AnnotationParser {
     this.commentRegex = /\s*\/\*\*(?<comment>(.|\n)+?)(?=\*\/)\*\/\s*(?<ident>[^\/\n]+)/gs;
     this.identRegex = /^\s*(.*class\s+(?<class>[a-zA-Z0-9]*)|(?<method>.+?(?=\()).*)\s*\{?\s*$/g;
     this.annotationRegex = /@(?<name>\S+)\s*(\{(?<type>.*?)(?=\})\})?(?<other>.*?)(?=(@|$))/gs;
+    this.handler = new Handler();
 
     /** @type {Annotation[]} */
     this.registry = [];
     this._loaded = {};
-    this._plugins = {};
+    this._managers = {};
+  }
+
+  /**
+   * @cache_loader
+   * @param {object} object 
+   */
+  load(object) {
+    this.registry = object.registry.map(v => {
+      const annotation = Annotation.load(v);
+      this._loaded[annotation.id] = annotation;
+      return annotation;
+    });
+  }
+
+  /**
+   * @cache_saver
+   * @returns {object}
+   */
+  save() {
+    return {
+      registry: this.registry.map(v => v.save()),
+    };
   }
 
   /**
@@ -25,10 +49,10 @@ module.exports = class AnnotationParser {
    */
   getPluginManager(annotation, definition = {}) {
     definition.annotation = annotation;
-    if (this._plugins[annotation] === undefined) {
-      this._plugins[annotation] = new DefaultPluginManager(this, definition);
+    if (this._managers[annotation] === undefined) {
+      this._managers[annotation] = new DefaultPluginManager(this, definition);
     }
-    return this._plugins[annotation];
+    return this._managers[annotation];
   }
 
   /**
@@ -52,13 +76,16 @@ module.exports = class AnnotationParser {
    * @param {string} glob
    * @returns {this}
    */
-  load(root, glob) {
+  read(root, glob) {
+    const newDefinitions = [];
     Glob.sync(Path.join(root, glob), {
       absolute: true,
     }).forEach(path => {
       const content = FS.readFileSync(path) + '';
-      this.registry.push(this.parse(content, root, path));
+      newDefinitions.push(this.parse(content, root, path));
     });
+    this.handler.emit('plugins', { load: newDefinitions, registry: this.registry, parser: this });
+    this.registry = this.registry.concat(newDefinitions);
     return this;
   }
 

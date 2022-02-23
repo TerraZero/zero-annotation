@@ -14,6 +14,7 @@ module.exports = class PluginManager {
     if (typeof id === 'string') {
       id = this.getDefinition(id);
     }
+    if (!id) return null;
     return this.create(id);
   }
 
@@ -28,12 +29,12 @@ module.exports = class PluginManager {
   /**
    * @returns {import('../types').T_PluginConfig[]}
    */
-  getDefinitions() {}
+  getDefinitions() { }
 
   /**
    * @param {import('../types').T_PluginConfig} definition 
    * @returns {any}
    */
-  create(definition) {}
+  create(definition) { }
 
 }

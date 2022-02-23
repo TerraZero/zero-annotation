@@ -13,6 +13,13 @@ module.exports = class DefaultPluginManager extends PluginManager {
     this.definition = definition;
     this._definitions = null;
     this._factory = null;
+    this._cache = {};
+
+    parser.handler.on('plugins', ({ load }) => {
+      if (this._definitions) {
+        this.loadDefinitions(load.filter(v => v.class.annotations[this.definition.annotation]));
+      }
+    });
   }
 
   /**
@@ -31,8 +38,21 @@ module.exports = class DefaultPluginManager extends PluginManager {
   create(definition) {
     if (this._factory) return this._factory(this, definition);
 
+    if (this._cache[definition.id]) return this._cache[definition.id];
+
     const Subject = require(Path.join(definition._plugin.root, definition._plugin.path));
-    return new Subject(definition);
+    const creator = definition._plugin.getMethodsByAnnotation('plugin_creator', ['static']);
+    let plugin = null;
+    if (creator.length) {
+      plugin = Subject[creator[0].name](definition);
+    } else {
+      plugin = new Subject(definition);
+    }
+
+    if (definition._plugin.getClassAnnotation('plugin_persist')) {
+      this._cache[definition.id] = plugin;
+    }
+    return plugin;
   }
 
   /**
@@ -43,15 +63,23 @@ module.exports = class DefaultPluginManager extends PluginManager {
     if (this._definitions !== null) return this._definitions;
 
     this._definitions = [];
-    for (const plugin of this.parser.getByAnnotation(this.definition.annotation)) {
+    this.loadDefinitions(this.parser.getByAnnotation(this.definition.annotation));
+    return this._definitions;
+  }
+
+  /**
+   * @param {Annotation[]} annotations 
+   */
+  loadDefinitions(annotations) {
+    for (const plugin of annotations) {
       const definition = { _plugin: plugin, _annotation: this.definition.annotation };
-      
+        
       const annotation = plugin.getClassAnnotation(this.definition.annotation);
       this.addAnnotationDefinition(definition, annotation, this.definition);
 
       for (const field in this.definition.fields) {
         const fieldAnnotations = plugin.getClassAnnotations(field);
-  
+
         this.addAnnotationDefinitionField(definition, fieldAnnotations, field, this.definition);
       }
 
@@ -72,7 +100,6 @@ module.exports = class DefaultPluginManager extends PluginManager {
       }
       this._definitions.push(definition);
     }
-    return this._definitions;
   }
 
   /**
