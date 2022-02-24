@@ -60,7 +60,7 @@ module.exports = class Annotation {
    * @returns {import('../types').T_Annotation[]}
    */
   getClassAnnotations(annotation) {
-    return this.class.annotations[annotation] || null;
+    return this.class.annotations[annotation] || [];
   }
 
   /**
