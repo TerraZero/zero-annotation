@@ -56,7 +56,7 @@ module.exports = class DefaultPluginManager extends PluginManager {
     const creator = definition._plugin.getMethodsByAnnotation('plugin_creator', ['static']);
     let plugin = null;
     if (creator.length) {
-      plugin = Subject[creator[0].name](definition, args);
+      plugin = Subject[creator[0].name](...args);
     } else {
       plugin = new Subject(...args);
     }
