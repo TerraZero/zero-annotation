@@ -20,6 +20,12 @@ module.exports = class AnnotationParser {
     this._managers = {};
   }
 
+  initService() {
+    this.createPluginManager('service', {
+      main: ['id'],
+    });
+  }
+
   /**
    * @cache_loader
    * @param {object} object 
@@ -42,6 +48,10 @@ module.exports = class AnnotationParser {
     };
   }
 
+  /**
+   * @param {string} id 
+   * @returns {any}
+   */
   getPlugin(id) {
     const split = id.split('.');
     const plugin = split.shift();
@@ -53,10 +63,18 @@ module.exports = class AnnotationParser {
 
   /**
    * @param {string} annotation 
+   * @returns {import('./PluginManager')}
+   */
+  getPluginManager(annotation) {
+    return this._managers[annotation];
+  }
+
+  /**
+   * @param {string} annotation 
    * @param {Object} definition 
    * @returns {DefaultPluginManager}
    */
-  getPluginManager(annotation, definition = {}) {
+  createPluginManager(annotation, definition = {}) {
     definition.annotation = annotation;
     if (this._managers[annotation] === undefined) {
       this._managers[annotation] = new DefaultPluginManager(this, definition);

@@ -36,7 +36,12 @@ module.exports = class DefaultPluginManager extends PluginManager {
    * @returns {any}
    */
   create(definition) {
-    if (this._factory) return this._factory(this, definition);
+    const args = [definition];
+    for (const arg of definition._plugin.getClassAnnotations('args')) {
+      args.push(this.parser.getPlugin(arg.value));
+    }
+
+    if (this._factory) return this._factory(this, definition, args);
 
     if (this._cache[definition.id]) return this._cache[definition.id];
 
@@ -44,9 +49,9 @@ module.exports = class DefaultPluginManager extends PluginManager {
     const creator = definition._plugin.getMethodsByAnnotation('plugin_creator', ['static']);
     let plugin = null;
     if (creator.length) {
-      plugin = Subject[creator[0].name](definition);
+      plugin = Subject[creator[0].name](definition, args);
     } else {
-      plugin = new Subject(definition);
+      plugin = new Subject(...args);
     }
 
     if (definition._plugin.getClassAnnotation('plugin_persist')) {
