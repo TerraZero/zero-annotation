@@ -17,7 +17,7 @@ module.exports = class DefaultPluginManager extends PluginManager {
 
     parser.handler.on('plugins', ({ load }) => {
       if (this._definitions) {
-        this.loadDefinitions(load.filter(v => v.class.annotations[this.definition.annotation]));
+        this.loadDefinitions(load.filter(v => v.class && v.class.annotations[this.definition.annotation]));
       }
     });
   }
