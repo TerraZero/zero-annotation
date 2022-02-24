@@ -36,14 +36,17 @@ module.exports = class DefaultPluginManager extends PluginManager {
    * @returns {any}
    */
   create(definition) {
-    const args = [definition];
+    const args = [];
     for (const arg of definition._plugin.getClassAnnotations('args')) {
-      if (typeof arg.value === 'string' && arg.value.startsWith('@')) {
+      if (arg.value === '@definition') {
+        args.push(definition);
+      } else if (typeof arg.value === 'string' && arg.value.startsWith('@')) {
         args.push(this.parser.getPlugin(arg.value.substring(1)));
       } else {
         args.push(arg.value);
       }
     }
+    if (args.length === 0) args.push(definition);
 
     if (this._factory) return this._factory(this, definition, args);
 
