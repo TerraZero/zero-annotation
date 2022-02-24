@@ -201,9 +201,10 @@ module.exports = class AnnotationParser {
   }
 
   async call(definition, method, ...args) {
-    if (Array.isArray(method)) {
-      const Subject = this.getPlugin(method[0]);
-      return await Subject[method[1]](...args);
+    if (typeof method === 'string' && method.startsWith('@')) {
+      const [ id, m ] = method.substring(1).split(':');
+      const Subject = this.getPlugin(id);
+      return await Subject[m](...args);
     } else {
       const Subject = this.getPlugin(definition._annotation + '.' + definition.id);
       return await Subject[method](...args);
