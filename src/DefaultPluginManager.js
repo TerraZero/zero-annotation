@@ -54,7 +54,7 @@ module.exports = class DefaultPluginManager extends PluginManager {
       plugin = new Subject(...args);
     }
 
-    if (definition._plugin.getClassAnnotation('plugin_persist')) {
+    if (!definition._plugin.getClassAnnotation('plugin_flush')) {
       this._cache[definition.id] = plugin;
     }
     return plugin;
