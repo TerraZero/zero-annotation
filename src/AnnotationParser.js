@@ -95,7 +95,7 @@ module.exports = class AnnotationParser {
    * @returns {Annotation[]}
    */
   getByAnnotation(annotation) {
-    return this.registry.filter(v => v.class.annotations[annotation]);
+    return this.registry.filter(v => v.class && v.class.annotations[annotation]);
   }
 
   /**
