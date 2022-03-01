@@ -23,9 +23,9 @@ module.exports = class AnnotationParser {
   loadPlugin(name) {
     let file = null;
     try {
-      file = require(name + '/zero.services');
+      file = require(name + '/zero');
     } catch (e) {}
-    if (file) file(this);
+    if (file) file.service(this);
   }
 
   initService() {
