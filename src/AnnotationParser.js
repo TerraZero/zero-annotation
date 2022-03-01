@@ -20,6 +20,14 @@ module.exports = class AnnotationParser {
     this._managers = {};
   }
 
+  loadPlugin(name) {
+    let file = null;
+    try {
+      file = require(name + '/zero.services');
+    } catch (e) {}
+    if (file) file(this);
+  }
+
   initService() {
     this.createPluginManager('service', {
       main: ['id'],
