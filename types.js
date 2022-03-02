@@ -31,4 +31,20 @@
  * @property {string} id
  */
 
+/**
+ * @callback C_SearchMatcher
+ * @param {(string|string[])} value
+ * @param {string} match
+ * @returns {boolean}
+ */
+
+/**
+ * @callback C_SearchPredicate
+ * @param {T_PluginConfig} definition
+ * @param {number} index
+ * @param {C_SearchMatcher} matcher
+ * @param {T_PluginConfig[]} definitions
+ * @returns {boolean}
+ */
+
 module.exports = {};

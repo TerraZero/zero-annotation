@@ -1,6 +1,7 @@
 const Path = require('path');
 const PluginManager = require('./PluginManager');
 const Reflection = require('pencl-kit/src/Util/Reflection');
+const ServiceProxy = require('./ServiceProxy');
 
 module.exports = class DefaultPluginManager extends PluginManager {
 
@@ -37,11 +38,13 @@ module.exports = class DefaultPluginManager extends PluginManager {
    */
   create(definition) {
     const args = [];
-    for (const arg of definition._plugin.getClassAnnotations('args')) {
+    for (const arg of definition._plugin.getClassAnnotations('arg')) {
       if (arg.value === '@definition') {
         args.push(definition);
       } else if (typeof arg.value === 'string' && arg.value.startsWith('@')) {
         args.push(this.parser.getPlugin(arg.value.substring(1)));
+      } else if (typeof arg.value === 'string' && arg.value.startsWith('~')) {
+        args.push(ServiceProxy(this.parser, arg.value.substring(1)));
       } else {
         args.push(arg.value);
       }

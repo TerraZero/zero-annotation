@@ -8,6 +8,16 @@ module.exports = class PluginManager {
   }
 
   /**
+   * @param {import('../types').C_SearchPredicate} predicate 
+   * @returns {any[]}
+   */
+  search(predicate) {
+    return this.getDefinitions().filter((v, i, l) => {
+      return predicate(v, i, (v, m) => Array.isArray(v) ? v.includes(m) : v === m, l)
+    }).map(this.create.bind(this));
+  }
+
+  /**
    * @param {(string|import('../types').T_PluginConfig)} id 
    */
   get(id) {

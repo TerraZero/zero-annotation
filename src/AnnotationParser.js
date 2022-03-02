@@ -4,6 +4,7 @@ const Glob = require('glob');
 const Handler = require('events');
 const Annotation = require('./Annotation');
 const DefaultPluginManager = require('./DefaultPluginManager');
+const ServiceProxy = require('./ServiceProxy');
 
 module.exports = class AnnotationParser {
 
@@ -31,6 +32,9 @@ module.exports = class AnnotationParser {
   initService() {
     this.createPluginManager('service', {
       main: ['id'],
+      fields: {
+        tag: 'tags',
+      },
     });
   }
 
@@ -154,29 +158,31 @@ module.exports = class AnnotationParser {
         }
       }
 
-      for (const annoMatch of match.groups.comment.matchAll(this.annotationRegex)) {
-        annotation.annotations = annotation.annotations || {};
-        annotation.annotations[annoMatch.groups.name] = annotation.annotations[annoMatch.groups.name] || [];
-        let value = null;
-        let description = null;
-        try {
-          let other = annoMatch.groups.other.trim();
-          if (other.startsWith('(')) {
-            value = this.getInternBraces(other);
+      for (const line of match.groups.comment.split('\r\n')) {
+        for (const annoMatch of line.matchAll(this.annotationRegex)) {
+          annotation.annotations = annotation.annotations || {};
+          annotation.annotations[annoMatch.groups.name] = annotation.annotations[annoMatch.groups.name] || [];
+          let value = null;
+          let description = null;
+          try {
+            let other = annoMatch.groups.other.trim();
+            if (other.startsWith('(')) {
+              value = this.getInternBraces(other);
+            }
+            if (value && !value.startsWith('{') && !value.startsWith('[') && !value.startsWith('"')) {
+              value = '"' + value + '"';
+            }
+            value = JSON.parse(value);
+          } catch (e) {
+            value = null;
           }
-          if (value && !value.startsWith('{') && !value.startsWith('[') && !value.startsWith('"')) {
-            value = '"' + value + '"';
-          }
-          value = JSON.parse(value);
-        } catch (e) {
-          value = null;
+          annotation.annotations[annoMatch.groups.name].push({
+            name: annoMatch.groups.name,
+            type: annoMatch.groups.type,
+            value: value,
+            description: description,
+          });
         }
-        annotation.annotations[annoMatch.groups.name].push({
-          name: annoMatch.groups.name,
-          type: annoMatch.groups.type,
-          value: value,
-          description: description,
-        });
       }
 
       data.push(annotation);
@@ -212,6 +218,10 @@ module.exports = class AnnotationParser {
     if (typeof method === 'string' && method.startsWith('@')) {
       const [ id, m ] = method.substring(1).split(':');
       const Subject = this.getPlugin(id);
+      return await Subject[m](...args);
+    } else if (typeof method === 'string' && method.startsWith('~')) {
+      const [ id, m ] = method.substring(1).split(':');
+      const Subject = ServiceProxy(this, id);
       return await Subject[m](...args);
     } else {
       const Subject = this.getPlugin(definition._annotation + '.' + definition.id);
