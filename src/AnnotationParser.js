@@ -11,7 +11,7 @@ module.exports = class AnnotationParser {
   constructor(options = {}) {
     this.options = options;
     this.commentRegex = /\s*\/\*\*(?<comment>(.|\n)+?)(?=\*\/)\*\/\s*(?<ident>[^\/\n]+)/gs;
-    this.identRegex = /^\s*(.*class\s+(?<class>[a-zA-Z0-9]*)|(?<method>.+?(?=\()).*)\s*\{?\s*$/g;
+    this.identRegex = /^\s*(.*class\s+(?<class>[a-zA-Z0-9]*)(\s+extends\s+(?<extends>[a-zA-Z0-9]+))?|(?<method>.+?(?=\()).*)\s*\{?\s*$/g;
     this.annotationRegex = /@(?<name>\S+)\s*(\{(?<type>.*?)(?=\})\})?(?<other>.*?)(?=$)/gm;
     this.handler = new Handler();
 
