@@ -42,7 +42,8 @@ module.exports = class Annotation {
   }
 
   get id() {
-    return this.ns + '/' + this.class.name;
+    const _class = this.class;
+    return _class ? this.ns + '/' + _class.name : null;
   }
 
   /** @returns {import('../types').T_AnnotationItem} */
