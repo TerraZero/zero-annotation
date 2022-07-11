@@ -41,6 +41,8 @@ module.exports = class DefaultPluginManager extends PluginManager {
     for (const arg of definition._plugin.getClassAnnotations('arg')) {
       if (arg.value === '@definition') {
         args.push(definition);
+      } else if (arg.value === '@parser') {
+        args.push(this.parser);
       } else if (typeof arg.value === 'string' && arg.value.startsWith('@')) {
         args.push(this.parser.getPlugin(arg.value.substring(1)));
       } else if (typeof arg.value === 'string' && arg.value.startsWith('~')) {
