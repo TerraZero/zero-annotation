@@ -5,6 +5,7 @@ const Handler = require('events');
 const Annotation = require('./Annotation');
 const DefaultPluginManager = require('./DefaultPluginManager');
 const ServiceProxy = require('./ServiceProxy');
+const PluginCollection = require('./PluginCollection');
 
 module.exports = class AnnotationParser {
 
@@ -108,6 +109,24 @@ module.exports = class AnnotationParser {
    */
   getByAnnotation(annotation) {
     return this.registry.filter(v => v.class && v.class.annotations[annotation]);
+  }
+
+  /**
+   * @param {string} annotation 
+   * @param {Object} query 
+   * @returns {PluginCollection}
+   */
+  getCollection(annotation, query = {}) {
+    const data = this.registry.filter(v => {
+      if (!v.class) return false;
+      if (annotation && !v.class.annotations[annotation]) return false;
+      if (query.tag && (!v.class.annotations['tag'] || !v.class.annotations['tag'].find(a => a.value === query.tag))) return false;
+      return true;
+    });
+    
+    return new PluginCollection(this, data.map(v => {
+      return annotation + '.' + v.class.annotations[annotation][0].value;
+    }));
   }
 
   /**

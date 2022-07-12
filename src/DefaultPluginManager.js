@@ -128,7 +128,7 @@ module.exports = class DefaultPluginManager extends PluginManager {
    * @param {any} fallback 
    * @returns {any}
    */
-   getDefinitionField(definition, name, fallback = null) {
+  getDefinitionField(definition, name, fallback = null) {
     if (definition.fields && Array.isArray(definition.fields[name])) {
       return definition.fields[name][0];
     } else {
